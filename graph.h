@@ -23,7 +23,7 @@ struct just_exist_vertex : std::exception {
 };
 
 template <typename T>
-struct vertex_data {
+struct vertex_data final {
 
 	T attr; // must be copied?
 	std::list<int> adjacency_list;
@@ -36,62 +36,71 @@ struct vertex_data {
 template<typename T>
 class graph final {
 
-	std::map<int, vertex_data<T>> vertex_arr;
+	using list_it = typename std::list<vertex_data<T>>::iterator;
+
+	std::list<vertex_data<T>> vertex_list;
+	std::map<int, list_it> vertex_map;
 
 public:
 
 	graph() {}
-							// ?
+							
 	void add_vertex(int num, const T& attr) {
 
-		auto ret = vertex_arr.emplace(num, vertex_data<T>(attr));
+		vertex_list.push_back(vertex_data<T>(attr));
+		auto ret = vertex_map.emplace(num, --vertex_list.end());
 		if (ret.second == false) throw just_exist_vertex();
 	}
 
 	void add_edge(int start, int end) {
 												
-		auto place = vertex_arr.find(start);
-		if (place == vertex_arr.end()) throw no_vertex();
+		auto place = vertex_map.find(start);
+		if (place == vertex_map.end()) throw no_vertex();
 
-		place = vertex_arr.find(end);
-		if (place == vertex_arr.end()) throw no_vertex();
+		place = vertex_map.find(end);
+		if (place == vertex_map.end()) throw no_vertex();
 
-		place->second.adjacency_list.push_back(end);
+		place->second->adjacency_list.push_back(end);
 	}
 
 	void del_vertex(int num) {
 
-		size_t deleted = vertex_arr.erase(num);
-		if (deleted < 1) throw no_vertex();
+		auto place = vertex_map.find(num);
+		if (place == vertex_map.end()) throw no_vertex();
 
-		for (auto vertex : vertex_arr) {
+		vertex_list.erase(place->second);
+		vertex_map.erase(num);
 
-			vertex.second.adjacency_list.remove(num);
+		for (auto vertex : vertex_list) {
+
+			vertex.adjacency_list.remove(num);
 		}
 	}
 
 	void del_edge(int start, int end) {
 
-		auto place = vertex_arr.find(start);
-		if (place == vertex_arr.end()) throw no_vertex();
+		auto place = vertex_map.find(start);
+		if (place == vertex_map.end()) throw no_vertex();
 
-		place->second.adjacency_list.remove(end); // no exception if end don't end in list?
+		place->second->adjacency_list.remove(end); // no exception if end don't end in list?
 		// And what if end not in a graph?
 	}
 
 	void dump() noexcept {
 // no auto&& because there is value not ref
-		for (auto vertex : vertex_arr) {
+		for (auto vertex : vertex_map) {
 
-			std::cout << vertex.first << " [" << vertex.second.attr << "] : ";
+			std::cout << vertex.first << " [" << vertex.second->attr << "] : ";
 
-			for (auto it : vertex.second.adjacency_list) {
+			for (auto it : vertex.second->adjacency_list) {
 
 				std::cout << it << " "; 
 			}
 
 			std::cout << std::endl;
 		}
+
+		std::cout << std::endl;
 	}
 };
 
