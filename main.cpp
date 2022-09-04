@@ -1,5 +1,7 @@
-#include "graph.h"
 #include <string>
+#include <iostream>
+
+#include "graph.h"
 
 int main() {
 
@@ -16,6 +18,17 @@ int main() {
 
 	gr.del_vertex(1);
 	gr.del_edge(3, 2);
-	
+
 	gr.dump();
+
+	try {
+		gr.del_vertex(42);	// ???
+	} catch (struct Graph::no_vertex const &exc) {
+		std::cout << exc.what() << std::endl;
+	} catch (...) {
+		std::cout << "Oops" << std::endl;
+	}
+
+
+	std::cout << "end of programm" << std::endl;
 }
